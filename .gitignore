@@ -1,0 +1,10 @@
+# Terraform generated files
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+.DS_Store
+
+# Ignore SSH key file
+*.pem
+*.pub
