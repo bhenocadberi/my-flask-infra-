@@ -1,0 +1,64 @@
+# .gitlab-ci.yml
+# This file configures the GitLab CI/CD pipeline for your Terraform infrastructure.
+
+# Define the default Docker image to use for all jobs in this pipeline.
+# This image contains Terraform CLI and often has basic tools.
+# For AWS CLI, it might need to be installed or use a more comprehensive image.
+# We'll use a common image that often includes both or install AWS CLI if needed.
+image: hashicorp/terraform:latest # A good base image for Terraform. AWS CLI needs to be installed.
+
+# Define stages for your pipeline.
+# 'validate': Checks the Terraform code for syntax errors.
+# 'plan': Generates an execution plan without applying changes.
+# 'apply': Applies the planned changes to your AWS infrastructure.
+stages:
+  - validate
+  - plan
+  - apply
+
+# Cache Terraform modules and plugins to speed up builds.
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .terraform/providers
+    - .terraform/modules
+
+# Before any job runs, perform common Terraform initialization steps.
+before_script:
+  # Install AWS CLI
+  - apk add --no-cache curl unzip python3 py3-pip
+  - pip install awscli
+  - export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+  - export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+  - export AWS_REGION=$AWS_REGION
+  - terraform --version
+  - terraform init
+
+# Job to validate Terraform configuration files.
+validate:
+  stage: validate
+  script:
+    - terraform validate
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# Job to generate a Terraform execution plan.
+plan:
+  stage: plan
+  script:
+    - terraform plan -out=planfile
+  artifacts:
+    paths:
+      - planfile # Store the plan file as an artifact for the apply job.
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# Job to apply the Terraform execution plan.
+# This job is manual for safety to prevent accidental deployments.
+apply:
+  stage: apply
+  script:
+    - terraform apply -auto-approve planfile
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual # Requires a manual trigger in the GitLab UI.
