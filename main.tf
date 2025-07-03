@@ -1,6 +1,7 @@
 # main.tf
 # This is a test comment to trigger a new pipeline
 # Configure the AWS provider
+#naay nasagol nga lobot
 # This block tells Terraform that we'll be working with AWS,
 # and it will use the credentials configured via 'aws configure'
 # or environment variables.
